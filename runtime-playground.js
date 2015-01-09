@@ -2,6 +2,7 @@
 
 require('shelljs/global')
 require('colors')
+var childProcess = require("child_process");
 
 config.fatal = true
 
@@ -67,22 +68,34 @@ function doQemu(file) {
     exit(1)
   }
 
-  var qemu = [
-    'qemu-system-x86_64',
-    '-m 512',
-    '-smp 1',
-    '-s',
-    '-boot order=d',
-    '-netdev user,id=mynet0,hostfwd=tcp::5555-:80',
-    '-device rtl8139,netdev=mynet0,mac=1a:46:0b:ca:bc:7c',
-    '-kernel ' + __dirname + '/kernel.bin',
-    '-initrd ' + tempfile,
-    '-serial stdio',
-    '-localtime',
-    '-M pc',
-  ].join(' ')
+  var qemu = 'qemu-system-x86_64';
 
-  exec(qemu)
+  var qemuArgs = [
+    '-m', '512',
+    '-smp', '1',
+    '-s',
+    '-boot', 'order=d',
+    '-netdev', 'user,id=mynet0,hostfwd=tcp::5555-:80',
+    '-device', 'rtl8139,netdev=mynet0,mac=1a:46:0b:ca:bc:7c',
+    '-kernel', __dirname + '/kernel.bin',
+    '-initrd', tempfile,
+    '-serial', 'pty',
+    '-localtime',
+    '-no-kvm-irqchip',
+    '-M', 'pc'
+  ];
+
+  var cp = childProcess.spawn(qemu, qemuArgs, {
+    stdio: "pipe",
+    env: process.env
+  });
+
+  process.stdin.pipe(cp.stdin);
+  cp.stdout.pipe(process.stdout);
+  cp.stderr.pipe(process.stdout);
+  cp.on("exit", function(code, sig) {
+    console.log(code, sig);
+  });
 }
 
 function doInit() {

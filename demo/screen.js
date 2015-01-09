@@ -13,6 +13,8 @@ Screen.prototype.clear = function(){
   for(var i=0; i<b.length; i++){
     b[i] = 0
   }
+
+  this.cursor = [ 0, 0 ];
 }
 
 Screen.prototype.nextChar = function() {
@@ -39,8 +41,15 @@ Screen.prototype.linearChar = function () {
 }
 
 Screen.prototype.newline = function () {
-  this.cursor[0]++
-  this.cursor[1] = 0
+  if(this.cursor[0] > this.rows - 3) {
+    for(var pos = this.cols; pos < this.buffer.length; pos++) {
+      this.buffer[pos - this.cols] = this.buffer[pos] || 0x00;
+    }
+  } else {
+    this.cursor[0]++;
+  }
+
+  this.cursor[1] = 0;
 }
 
 Screen.prototype.returnOrClear = function (){
@@ -77,6 +86,23 @@ Screen.prototype.write = function (line) {
       this.writeChar(char)
     }
   }
+}
+
+Screen.prototype.writeFun = function (line) {
+  var c = this.color;
+
+  for(var i=0; i<line.length; i++) {
+    this.color = (i*12) % 255;
+
+    var char = line[i]
+    if (char === '\n') {
+      this.returnOrClear()
+    } else {
+      this.writeChar(char)
+    }
+  }
+
+  this.color = c;
 }
 
 module.exports = Screen
